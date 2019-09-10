@@ -1,0 +1,35 @@
+{
+  "name": "cbx-baidu-push-plugin",
+  "version": "0.0.1",
+  "description": "An Android Cordova plugin that allows users to receive push notification from Baidu.",
+  "cordova": {
+    "id": "cbx-baidu-push-plugin",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelvinkg/CbxBaiduPushPlugin.git"
+  },
+  "keywords": [
+    "Baidu",
+    "Notification",
+    "Message",
+    "Alert",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=3.0.0"
+    }
+  ],
+  "author": "Kelvin Chong <kelvinkg@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kelvinkg/CbxBaiduPushPlugin/issues"
+  },
+  "homepage": "https://github.com/kelvinkg/CbxBaiduPushPlugin/"
+}
