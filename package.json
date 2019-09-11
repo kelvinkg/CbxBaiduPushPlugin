@@ -1,9 +1,9 @@
 {
-  "name": "cbx-baidu-push-plugin",
+  "name": "cbx-baidu-push",
   "version": "0.0.1",
   "description": "An Android Cordova plugin that allows users to receive push notification from Baidu.",
   "cordova": {
-    "id": "cbx-baidu-push-plugin",
+    "id": "cbx-baidu-push",
     "platforms": [
       "android"
     ]

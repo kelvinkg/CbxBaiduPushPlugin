@@ -1,4 +1,4 @@
-package com.cbx.baidu.push.plugin;
+package com.cbx.baidu.push;
 // The native Toast API
 import android.widget.Toast;
 // Cordova-required packages

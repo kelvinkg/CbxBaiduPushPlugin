@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cbx-baidu-push-plugin" version="0.0.1">
+        id="cbx-baidu-push" version="0.0.1">
     <name>CbxBaiduPushPlugin</name>
 
     <description>An Android Cordova plugin that allows users to receive push notification from Baidu.</description>
     <license>MIT</license>
 
-    <keywords>cordova,android,toast,message,alert</keywords>
+    <keywords>cordova,android,push,message,alert</keywords>
     <repo>https://github.com/kelvinkg/CbxBaiduPushPlugin.git</repo>
     <issue>https://github.com/kelvinkg/issues</issue>
 
@@ -21,10 +21,10 @@
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="CbxBaiduPushPlugin">
-                <param name="android-package" value="com.cbx.baidu.push.plugin"/>
+                <param name="android-package" value="com.cbx.baidu.push.CbxBaiduPushPlugin"/>
             </feature>
         </config-file>
 
-        <source-file src="src/android/CbxBaiduPushPlugin.java" target-dir="src/com/cbx/baidu/push/plugin" />
+        <source-file src="src/android/CbxBaiduPushPlugin.java" target-dir="src/com/cbx/baidu/push" />
     </platform>
 </plugin>
