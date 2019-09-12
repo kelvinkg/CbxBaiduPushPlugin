@@ -10,6 +10,17 @@ CbxBaiduPushPlugin.prototype.show = function(message, duration, successCallback,
     cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'show', [options]);
 }
 
+CbxBaiduPushPlugin.prototype.startWork = function(apiKey, successCallback, errorCallback) {
+    var options = {};
+    options.apiKey = apiKey;
+
+    cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'startWork', [options]);
+}
+
+
+
+
+
 // Installation constructor that binds CbxBaiduPushPlugin to window
 CbxBaiduPushPlugin.install = function() {
     if (!window.plugins) {
