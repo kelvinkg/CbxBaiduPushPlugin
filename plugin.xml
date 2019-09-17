@@ -15,8 +15,8 @@
         <engine name="cordova" version=">=3.0.0"/>
     </engines>
 
-    <js-module src="www/cbxBaiduPushPlugin.js" name="cbxBaiduPushPlugin">
-        <clobbers target="window.plugins.cbxBaiduPushPlugin" />
+    <js-module src="www/cbxBaiduPushPlugin.js" name="CbxBaiduPushPlugin">
+        <clobbers target="CbxBaiduPushPlugin" />
     </js-module>
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">

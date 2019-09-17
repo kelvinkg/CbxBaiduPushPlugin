@@ -1,5 +1,6 @@
 // Empty constructor
 var CbxBaiduPushPlugin = function(options) {
+
     this.options = options;
 
 }
@@ -82,6 +83,8 @@ CbxBaiduPushPlugin.init = function(options) {
 module.exports = {
 
     init: function(options) {
+        console.log('100');
+        // comments
         return new CbxBaiduPushPlugin(options);
     },
 
