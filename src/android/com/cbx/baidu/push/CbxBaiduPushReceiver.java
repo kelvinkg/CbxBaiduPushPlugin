@@ -3,40 +3,63 @@ package com.cbx.baidu.push;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.ArrayList;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONArray;
+
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
+import org.apache.cordova.PluginResult;
+import org.apache.cordova.CallbackContext;
+
 import com.baidu.android.pushservice.PushMessageReceiver;
 
-
-/**
+/*
  * Push消息处理receiver。请编写您需要的回调函数， 一般来说： onBind是必须的，用来处理startWork返回值；
- * onMessage用来接收透传消息； onSetTags、onDelTags、onListTags是tag相关操作的回调；
- * onNotificationClicked在通知被点击时回调； onUnbind是stopWork接口的返回值回调
- *
+ *onMessage用来接收透传消息； onSetTags、onDelTags、onListTags是tag相关操作的回调；
+ *onNotificationClicked在通知被点击时回调； onUnbind是stopWork接口的返回值回调
  * 返回值中的errorCode，解释如下：
- *  0 - Success
- *  10001 - Network Problem
- *  30600 - Internal Server Error
- *  30601 - Method Not Allowed
- *  30602 - Request Params Not Valid
- *  30603 - Authentication Failed
- *  30604 - Quota Use Up Payment Required
- *  30605 - Data Required Not Found
- *  30606 - Request Time Expires Timeout
- *  30607 - Channel Token Timeout
- *  30608 - Bind Relation Not Found
- *  30609 - Bind Number Too Many
- *
+ *0 - Success
+ *10001 - Network Problem
+ *10101  Integrate Check Error
+ *30600 - Internal Server Error
+ *30601 - Method Not Allowed
+ *30602 - Request Params Not Valid
+ *30603 - Authentication Failed
+ *30604 - Quota Use Up Payment Required
+ *30605 -Data Required Not Found
+ *30606 - Request Time Expires Timeout
+ *30607 - Channel Token Timeout
+ *30608 - Bind Relation Not Found
+ *30609 - Bind Number Too Many
  * 当您遇到以上返回错误时，如果解释不了您的问题，请用同一请求的返回值requestId和errorCode联系我们追查问题。
  *
  */
 
- public class CbxBaiduPushReceiver extends PushMessageReceiver {
-    private static final String TAG = CbxBaiduPushReceiver.class.getSimpleName();
+public class CbxBaiduPushReceiver extends PushMessageReceiver {
+    /** TAG to Log */
+    public static final String TAG = CbxBaiduPushReceiver.class.getSimpleName();
+    /** 回调类型 */
+    private enum CB_TYPE {
+    	onBind,
+    	onUnbind,
+    	onSetTags,
+    	onDelTags,
+    	onListTags,
+    	onMessage,
+    	onNotificationClicked,
+    	onNotificationArrived
+    };
+
+
+    private static ArrayList<PluginResult> queuePushCallbackContext = new ArrayList<PluginResult>();
+    private static ArrayList<PluginResult> queueOnMessageCallbackContext = new ArrayList<PluginResult>();
+    private static ArrayList<PluginResult> queueOnNotificationClickedCallbackContext = new ArrayList<PluginResult>();
+    private static ArrayList<PluginResult> queueOnNotificationArrivedCallbackContext = new ArrayList<PluginResult>();
 
     /**
      * 调用PushManager.startWork后，sdk将对push
@@ -58,18 +81,30 @@ import com.baidu.android.pushservice.PushMessageReceiver;
      * @return none
      */
     @Override
-    public void onBind(Context context, int errorCode, String appid,
+    public void onBind(Context context, int errorCode, String appId,
             String userId, String channelId, String requestId) {
-        String responseString = "onBind errorCode=" + errorCode + " appid="
-                + appid + " userId=" + userId + " channelId=" + channelId
-                + " requestId=" + requestId;
-        Log.d(CbxBaiduPushReceiver.TAG + "onBind()", responseString);
-        // 绑定成功，设置已绑定flag，可以有效的减少不必要的绑定请求
-        if (errorCode == 0) {
-            //Utils.setBind(context, true);
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (errorCode == 0) {
+                setStringData(data, "appId", appId);
+                setStringData(data, "userId", userId);
+                setStringData(data, "channelId", channelId);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onBind);
+                sendSuccessData(queuePushCallbackContext, CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.d(TAG, jsonObject.toString());
+            }else{
+                setStringData(data, "errorCode", "透传消息为空");
+                jsonObject.put("code", errorCode);
+                sendErrorData(queuePushCallbackContext, CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.e(TAG, "绑定失败");
+                Log.e(TAG, "errorCode: " + errorCode);
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
         }
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, responseString);
+
     }
 
     /**
@@ -85,28 +120,28 @@ import com.baidu.android.pushservice.PushMessageReceiver;
     @Override
     public void onMessage(Context context, String message,
             String customContentString) {
-        String messageString = "透传消息 message=\"" + message
-                + "\" customContentString=" + customContentString;
-        Log.d(CbxBaiduPushReceiver.TAG + "onMessage(): ", messageString);
-        // 自定义内容获取方式，mykey和myvalue对应透传消息推送时自定义内容中设置的键和值
-        if (!TextUtils.isEmpty(customContentString)) {
-            JSONObject customJson = null;
-            try {
-                customJson = new JSONObject(customContentString);
-                String myvalue = null;
-                if (customJson.isNull("mykey")) {
-                    myvalue = customJson.getString("mykey");
-                }
-            } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (!TextUtils.isEmpty(customContentString)) {
+                setStringData(data, "message", message);
+                setStringData(data, "customContentString", customContentString);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onMessage);
+                sendSuccessData(queueOnMessageCallbackContext, CbxBaiduPushPlugin.onMessageCallbackContext, jsonObject, true);
+                Log.d(TAG, jsonObject.toString());
+            }else{
+                setStringData(data, "errorCode", "透传消息为空");
+                sendErrorData(queueOnMessageCallbackContext, CbxBaiduPushPlugin.onMessageCallbackContext, jsonObject, true);
+                Log.e(TAG, "透传消息为空");
             }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
         }
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, messageString);
     }
+
     /**
-     * 接收通知点击的函数。注：推送通知被用户点击前，应用无法通过接口获取通知的内容。
+     * 接收通知点击的函数。
      *
      * @param context
      *            上下文
@@ -120,26 +155,68 @@ import com.baidu.android.pushservice.PushMessageReceiver;
     @Override
     public void onNotificationClicked(Context context, String title,
             String description, String customContentString) {
-        String notifyString = "通知点击 title=\"" + title + "\" description=\""
-                + description + "\" customContent=" + customContentString;
-        Log.d(CbxBaiduPushReceiver.TAG + "onNotificationClicked()", notifyString);
-        // 自定义内容获取方式，mykey和myvalue对应通知推送时自定义内容中设置的键和值
-        if (!TextUtils.isEmpty(customContentString)) {
-            JSONObject customJson = null;
-            try {
-                customJson = new JSONObject(customContentString);
-                String myvalue = null;
-                if (customJson.isNull("mykey")) {
-                    myvalue = customJson.getString("mykey");
-                }
-            } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (!TextUtils.isEmpty(title)) {
+                setStringData(data, "title", title);
+                setStringData(data, "description", description);
+                setStringData(data, "customContentString", customContentString);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onNotificationClicked);
+                sendSuccessData(queueOnNotificationClickedCallbackContext,
+                    CbxBaiduPushPlugin.onNotificationClickedCallbackContext, jsonObject, true);
+                Log.d(TAG, jsonObject.toString());
+            }else{
+                setStringData(data, "errorCode", "推送的通知点击内容为空");
+                sendErrorData(queueOnNotificationClickedCallbackContext,
+                    CbxBaiduPushPlugin.onNotificationClickedCallbackContext, jsonObject, true);
+                Log.e(TAG, "推送的通知点击内容为空");
             }
+        } catch (JSONException e) {
+                Log.e(TAG, e.getMessage(), e);
         }
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, notifyString);
     }
+
+    /**
+     * 接收通知到达的函数。
+     *
+     * @param context
+     *            上下文
+     * @param title
+     *            推送的通知的标题
+     * @param description
+     *            推送的通知的描述
+     * @param customContentString
+     *            自定义内容，为空或者json字符串
+     */
+
+    @Override
+    public void onNotificationArrived(Context context, String title,
+            String description, String customContentString) {
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (!TextUtils.isEmpty(title)) {
+                setStringData(data, "title", title);
+                setStringData(data, "description", description);
+                setStringData(data, "customContentString", customContentString);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onNotificationArrived);
+                sendSuccessData(queueOnNotificationArrivedCallbackContext,
+                CbxBaiduPushPlugin.onNotificationArrivedCallbackContext, jsonObject, true);
+                Log.d(TAG, jsonObject.toString());
+            }else{
+                setStringData(data, "errorCode", "推送的通知内容为空");
+                sendErrorData(queueOnNotificationArrivedCallbackContext,
+                CbxBaiduPushPlugin.onNotificationArrivedCallbackContext, jsonObject, true);
+                Log.e(TAG, "推送的通知内容为空");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
+    }
+
     /**
      * setTags() 的回调函数。
      *
@@ -157,12 +234,26 @@ import com.baidu.android.pushservice.PushMessageReceiver;
     @Override
     public void onSetTags(Context context, int errorCode,
             List<String> sucessTags, List<String> failTags, String requestId) {
-        String responseString = "onSetTags errorCode=" + errorCode
-                + " sucessTags=" + sucessTags + " failTags=" + failTags
-                + " requestId=" + requestId;
-        Log.d(CbxBaiduPushReceiver.TAG + "onSetTags()", responseString);
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, responseString);
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (errorCode == 0) {
+                setArrayData(data, "sucessTags", sucessTags);
+                setArrayData(data, "failTags", failTags);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onSetTags);
+                sendSuccessData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.d(TAG, jsonObject.toString());
+            }else{
+                setStringData(data, "errorCode", "" + errorCode);
+                sendErrorData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.e(TAG, "设置Tag失败");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
     }
 
     /**
@@ -182,12 +273,26 @@ import com.baidu.android.pushservice.PushMessageReceiver;
     @Override
     public void onDelTags(Context context, int errorCode,
             List<String> sucessTags, List<String> failTags, String requestId) {
-        String responseString = "onDelTags errorCode=" + errorCode
-                + " sucessTags=" + sucessTags + " failTags=" + failTags
-                + " requestId=" + requestId;
-        Log.d(CbxBaiduPushReceiver.TAG + "onDelTags()", responseString);
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, responseString);
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (errorCode == 0) {
+                setArrayData(data, "sucessTags", sucessTags);
+                setArrayData(data, "failTags", failTags);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onDelTags);
+                sendSuccessData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.d(TAG, jsonObject.toString());
+            } else {
+                setStringData(data, "errorCode", "" + errorCode);
+                sendErrorData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.e(TAG, "设置Tag失败");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
     }
 
     /**
@@ -205,12 +310,27 @@ import com.baidu.android.pushservice.PushMessageReceiver;
     @Override
     public void onListTags(Context context, int errorCode, List<String> tags,
             String requestId) {
-        String responseString = "onListTags errorCode=" + errorCode + " tags="
-                + tags;
-        Log.d(CbxBaiduPushReceiver.TAG + "onListTags()", responseString);
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, responseString);
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (errorCode == 0) {
+                setArrayData(data, "tags", tags);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onListTags);
+                sendSuccessData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.d(TAG, jsonObject.toString());
+            } else {
+                setStringData(data, "errorCode", "" + errorCode);
+                sendErrorData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.e(TAG, "listTags失败");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
     }
+
     /**
      * PushManager.stopWork() 的回调函数。
      *
@@ -223,39 +343,101 @@ import com.baidu.android.pushservice.PushMessageReceiver;
      */
     @Override
     public void onUnbind(Context context, int errorCode, String requestId) {
-        String responseString = "onUnbind errorCode=" + errorCode
-                + " requestId = " + requestId;
-        Log.d(CbxBaiduPushReceiver.TAG + "onUnbind()", responseString);
-        // 解绑定成功，设置未绑定flag，
-        if (errorCode == 0) {
-            //Utils.setBind(context, false);
+        try {
+            JSONObject jsonObject = new JSONObject();
+            JSONObject data = new JSONObject();
+            if (errorCode == 0) {
+                setStringData(data, "requestId", requestId);
+                jsonObject.put("data", data);
+                jsonObject.put("type", CB_TYPE.onUnbind);
+                sendSuccessData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.d(TAG, jsonObject.toString());
+            } else {
+                setStringData(data, "errorCode", "" + errorCode);
+                sendErrorData(queuePushCallbackContext,
+                    CbxBaiduPushPlugin.pushCallbackContext, jsonObject, false);
+                Log.e(TAG, "解绑定失败");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, e.getMessage(), e);
         }
-        // Demo更新界面展示代码，应用请在这里加入自己的处理逻辑
-        //updateContent(context, responseString);
     }
 
-    @Override
-    public void onNotificationArrived(Context context, String s, String s1, String s2) {
-        Log.d(CbxBaiduPushReceiver.TAG, "onNotificationArrived(): s = " + s);
-        Log.d(CbxBaiduPushReceiver.TAG, "onNotificationArrived(): s1 = " + s1);
-        Log.d(CbxBaiduPushReceiver.TAG, "onNotificationArrived(): s2 = " + s2);
+    /**
+     * 接收推送成功内容并返回给前端JS
+     *
+     * @param jsonObject JSON对象
+     */
+    private void sendSuccessData(ArrayList<PluginResult> queue, CallbackContext callbackContext, JSONObject jsonObject, boolean isCallBackKeep) {
+        Log.d(TAG, "CbxBaiduPushReceiver#sendSuccessData: " + (jsonObject != null ? jsonObject.toString() : "null"));
+
+        PluginResult result = new PluginResult(PluginResult.Status.OK, jsonObject);
+        result.setKeepCallback(isCallBackKeep);
+        sendResultWithQueue(queue, callbackContext, result);
     }
 
-    /*
-    private void updateContent(Context context, String content) {
-        Log.d(TAG, "updateContent");
-        String logText = "" + Utils.logStringCache;
-        if (!logText.equals("")) {
-            logText += "\n";
-        }
-        SimpleDateFormat sDateFormat = new SimpleDateFormat("HH-mm-ss");
-        logText += sDateFormat.format(new Date()) + ": ";
-        logText += content;
-        Utils.logStringCache = logText;
-        Intent intent = new Intent();
-        intent.setClass(context.getApplicationContext(), PushDemoActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.getApplicationContext().startActivity(intent);
+    /**
+     * 接收推送失败内容并返回给前端JS
+     *
+     * @param jsonObject JSON对象
+     */
+    private void sendErrorData(ArrayList<PluginResult> queue, CallbackContext callbackContext, JSONObject jsonObject, boolean isCallBackKeep) {
+        Log.d(TAG, "CbxBaiduPushReceiver#sendErrorData: " + (jsonObject != null ? jsonObject.toString() : "null"));
+
+        PluginResult result = new PluginResult(PluginResult.Status.ERROR, jsonObject);
+        result.setKeepCallback(false);
+        sendResultWithQueue(queue, callbackContext, result);
     }
-    */
+
+    private void sendResultWithQueue(ArrayList<PluginResult> queue, CallbackContext callbackContext, PluginResult result) {
+        if (callbackContext == null) {
+            Log.d(TAG, "CbxBaiduPushReceiver#sendResultWithQueue: callbackContext IS NULL");
+            queue.add(result);
+        }
+        else {
+            callbackContext.sendPluginResult(result);
+            sendQueue(queuePushCallbackContext, CbxBaiduPushPlugin.pushCallbackContext);
+            sendQueue(queueOnNotificationArrivedCallbackContext, CbxBaiduPushPlugin.onNotificationArrivedCallbackContext);
+            sendQueue(queueOnMessageCallbackContext, CbxBaiduPushPlugin.onMessageCallbackContext);
+            sendQueue(queueOnNotificationClickedCallbackContext, CbxBaiduPushPlugin.onNotificationClickedCallbackContext);
+        }
+    }
+
+    private void sendQueue(ArrayList<PluginResult> queue, CallbackContext callbackContext) {
+        if (callbackContext != null) {
+            for (PluginResult result : queue) {
+                callbackContext.sendPluginResult(result);
+            }
+            queue.clear();
+        }
+    }
+
+    /**
+     * 设定字符串类型JSON对象，如值为空时不设定
+     *
+     * @param jsonObject JSON对象
+     * @param name 关键字
+     * @param value 值
+     * @throws JSONException JSON异常
+     */
+    private void setStringData(JSONObject jsonObject, String name, String value) throws JSONException {
+    	if (value != null && !"".equals(value)) {
+    		jsonObject.put(name, value);
+    	}
+    }
+
+    /**
+     * 设定Array类型JSON对象，如值为空时不设定
+     *
+     * @param jsonObject JSON对象
+     * @param name 关键字
+     * @param value 值
+     * @throws JSONException JSON异常
+     */
+    private void setArrayData(JSONObject jsonObject, String name, List<String> value) throws JSONException {
+    	if (value != null) {
+    		jsonObject.put(name, new JSONArray(value));
+    	}
+    }
 }

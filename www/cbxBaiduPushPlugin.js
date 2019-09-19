@@ -1,25 +1,22 @@
 // Empty constructor
-var CbxBaiduPushPlugin = function(options) {
+var CbxBaiduPushPlugin = function(envInfo) {
+    console.log('CbxBaiduPushPlugin#constructor() is called, envInfo = ' + JSON.stringify(envInfo));
 
-    this.options = options;
-
-}
-
-//function CbxBaiduPushPlugin(options) {}
-
-// The function that passes work along to native shells
-// Message is a string, duration may be 'long' or 'short'
-CbxBaiduPushPlugin.prototype.show = function(message, duration, successCallback, errorCallback) {
-    var options = {};
-    options.message = message;
-    options.duration = duration;
-    cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'show', [options]);
+    this.envInfo = {...envInfo};
 }
 
 
-CbxBaiduPushPlugin.prototype.startWork = function(apiKey, successCallback, errorCallback) {
+CbxBaiduPushPlugin.prototype.startWork = function(successCallback, errorCallback) {
+    console.log('CbxBaiduPushPlugin#startWork() with envInfo = ' + JSON.stringify(this.envInfo));
+
+    if (!this.envInfo || !this.envInfo.apiKey) {
+        console.error('CbxBaiduPushPlugin#startWork() empty API Key.');
+        return;
+    }
+
     var options = {};
-    options.apiKey = apiKey;
+    options.apiKey = this.envInfo.apiKey;
+    console.log('startWork(): apiKey = ' + options.apiKey);
 
     cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'startWork', [options]);
 }
@@ -40,12 +37,15 @@ CbxBaiduPushPlugin.prototype.resumeWork = function(successCallback, errorCallbac
 
 
 CbxBaiduPushPlugin.prototype.isPushEnabled = function(successCallback, errorCallback) {
+    console.log('CbxBaiduPushPlugin#isPushEnabled()');
     var options = {};
+
     cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'isPushEnabled', [options]);
 }
 
 
 CbxBaiduPushPlugin.prototype.setTags = function(tags, successCallback, errorCallback) {
+    console.log('CbxBaiduPushPlugin#setTags(): tags = ' + JSON.stringify(tags));
     var options = {};
     options.tags = tags;
 
@@ -54,6 +54,7 @@ CbxBaiduPushPlugin.prototype.setTags = function(tags, successCallback, errorCall
 
 
 CbxBaiduPushPlugin.prototype.delTags = function(tags, successCallback, errorCallback) {
+    console.log('CbxBaiduPushPlugin#delTags(): tags = ' + JSON.stringify(tags));
     var options = {};
     options.tags = tags;
 
@@ -62,30 +63,30 @@ CbxBaiduPushPlugin.prototype.delTags = function(tags, successCallback, errorCall
 
 
 CbxBaiduPushPlugin.prototype.listTags = function(successCallback, errorCallback) {
+    console.log('CbxBaiduPushPlugin#listTags()');
+
     var options = {};
 
-    cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'delTags', [options]);
+    cordova.exec(successCallback, errorCallback, 'CbxBaiduPushPlugin', 'listTags', [options]);
 }
 
-// Installation constructor that binds CbxBaiduPushPlugin to window
 /*
-CbxBaiduPushPlugin.init = function(options) {
-    if (!window.plugins) {
-      window.plugins = {};
-    }
-    window.plugins.cbxBaiduPushPlugin = new CbxBaiduPushPlugin(options);
-    return window.plugins.cbxBaiduPushPlugin;
-};
-
-//cordova.addConstructor(CbxBaiduPushPlugin.install);
+  onMessage: function(successCallback, failureCallback){
+      exec(successCallback, failureCallback, 'BaiduPush', 'onMessage', []);
+  },
+  onNotificationClicked: function(successCallback, failureCallback){
+      exec(successCallback, failureCallback, 'BaiduPush', 'onNotificationClicked', []);
+  },
+  onNotificationArrived: function(successCallback, failureCallback){
+      exec(successCallback, failureCallback, 'BaiduPush', 'onNotificationArrived', []);
+  },
 */
 
-module.exports = {
 
-    init: function(options) {
-        console.log('100');
-        // comments
-        return new CbxBaiduPushPlugin(options);
+module.exports = {
+    init: function(envInfo) {
+
+        return new CbxBaiduPushPlugin(envInfo);
     },
 
     CbxBaiduPushPlugin: CbxBaiduPushPlugin
