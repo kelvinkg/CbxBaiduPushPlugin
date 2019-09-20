@@ -25,7 +25,7 @@
             </feature>
         </config-file>
 
-        <config-file target="AndroidManifest.xml" parent="/*">
+        <cconfig-file target="AndroidManifest.xml" parent="/*">
             <!-- Push service 运行需要的权限 -->
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -43,9 +43,9 @@
                 android:protectionLevel="signature">
             </permission>
 
-        </config-file>
+        </cconfig-file>
 
-        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+        <config-file target="AndroidManifest.xml" parent="./application">
             <!-- push service start -->
             <!-- 用于接收系统消息以保证PushService正常运行 -->
             <receiver android:name="com.baidu.android.pushservice.PushServiceReceiver" android:process=":bdservice_v1">
